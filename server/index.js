@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
@@ -17,6 +18,11 @@ const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+});
 
 let bazaarData = {};
 
@@ -113,7 +119,7 @@ function predictNextPeak(itemData) {
   };
 }
 
-app.get('/api/items', (req, res) => {
+app.get('/api/items', apiLimiter, (req, res) => {
   const items = Object.entries(bazaarData)
     .filter(([, item]) => bazaarItemSchema.safeParse(item).success)
     .map(([id, item]) => ({
@@ -149,7 +155,7 @@ app.get('/api/variations', (req, res) => {
   res.json(variations);
 });
 
-app.get('/api/items/:itemId', (req, res) => {
+app.get('/api/items/:itemId', apiLimiter, (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
   if (!itemIdParamSchema.safeParse(itemId).success) {
     return res.status(400).json([]);
