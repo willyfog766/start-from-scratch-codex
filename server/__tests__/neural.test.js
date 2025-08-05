@@ -45,8 +45,10 @@ describe('volatility model utilities', () => {
     const pred = await trainVolatilityModel('TEST', data);
     expect(typeof pred).toBe('number');
     expect(fs.existsSync(modelFile)).toBe(true);
-    const again = await predictVolatility('TEST', data);
-    expect(typeof again).toBe('number');
+    const info = await predictVolatility('TEST', data);
+    expect(typeof info.prediction).toBe('number');
+    expect(info.modelExists).toBe(true);
+    expect(info.trained).toBe(false);
   });
 });
 

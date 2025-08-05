@@ -179,15 +179,29 @@ app.get('/api/items/:itemId/volatility-prediction', async (req, res) => {
   if (volSeries.length < 3) {
     return res.json({});
   }
-  const predictedNorm = await predictVolatility(itemId, volSeries);
+  const {
+    prediction,
+    modelExists,
+    trained,
+    dataPoints,
+  } = await predictVolatility(itemId, volSeries);
+  if (prediction == null) {
+    return res.json({ modelExists, trained, dataPoints });
+  }
   const changes = [];
   for (let i = 1; i < history.length; i++) {
     changes.push(Math.abs(history[i].buyPrice - history[i - 1].buyPrice));
   }
   const max = Math.max(...changes);
   const min = Math.min(...changes);
-  const predictedVolatility = predictedNorm * (max - min) + min;
-  res.json({ predictedVolatility });
+  const predictedVolatility = prediction * (max - min) + min;
+  res.json({
+    predictedVolatility,
+    normalizedPrediction: prediction,
+    modelExists,
+    trained,
+    dataPoints,
+  });
 });
 
 const PORT = process.env.PORT || 3001;
