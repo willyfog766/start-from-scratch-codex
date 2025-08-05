@@ -1,4 +1,4 @@
-const { z } = require('zod');
+const z = require('zod');
 
 const historyEntrySchema = z.object({
   time: z.number(),
