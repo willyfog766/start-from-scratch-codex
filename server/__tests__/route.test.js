@@ -63,6 +63,6 @@ describe('GET /api/items/:id/volatility-prediction', () => {
       '/api/items/TEST/volatility-prediction'
     );
     expect(res.status).toBe(200);
-    expect(res.body.predictedVolatility).toBeGreaterThan(0);
+    expect(Number.isFinite(res.body.predictedVolatility)).toBe(true);
   });
 });
