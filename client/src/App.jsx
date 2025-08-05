@@ -1,18 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Line } from 'react-chartjs-2'
-import 'chart.js/auto'
-import {
-  Container,
-  Typography,
-  Box,
-  Paper,
-  Tabs,
-  Tab,
-  List,
-  ListItemButton,
-  ListItemText,
-} from '@mui/material'
+import { Container, Typography, Box, Tabs, Tab } from '@mui/material'
 import './App.css'
+import ItemList from './components/ItemList'
+import ItemChart from './components/ItemChart'
 
 function App() {
   const [tab, setTab] = useState(0)
@@ -52,24 +42,6 @@ function App() {
     .sort((a, b) => b.variation - a.variation)
     .slice(0, 10)
 
-  const chartData = {
-    labels: history.map((h) => new Date(h.time).toLocaleTimeString()),
-    datasets: [
-      {
-        label: 'Buy Price',
-        data: history.map((h) => h.buyPrice),
-        borderColor: 'rgb(75,192,192)',
-        fill: false,
-      },
-      {
-        label: 'Sell Price',
-        data: history.map((h) => h.sellPrice),
-        borderColor: 'rgb(192,75,75)',
-        fill: false,
-      },
-    ],
-  }
-
   return (
     <Container className="App" maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom align="center">
@@ -81,53 +53,30 @@ function App() {
       </Tabs>
       {tab === 0 && (
         <Box mt={2}>
-          <List>
-            {variations.map((v) => (
-              <ListItemButton
-                key={v.id}
-                onClick={() => {
-                  setSelectedItem(v.id)
-                  setTab(1)
-                }}
-              >
-                <ListItemText
-                  primary={v.id}
-                  secondary={`Variation: ${v.variation.toFixed(2)}`}
-                />
-              </ListItemButton>
-            ))}
-          </List>
+          <ItemList
+            items={variations}
+            onItemSelect={(id) => {
+              setSelectedItem(id)
+              setTab(1)
+            }}
+            getSecondary={(v) => `Variation: ${v.variation.toFixed(2)}`}
+          />
         </Box>
       )}
       {tab === 1 && (
         <Box mt={2} display="flex" gap={2}>
           <Box width="30%" maxHeight={400} sx={{ overflowY: 'auto' }}>
-            <List>
-              {items.map((it) => (
-                <ListItemButton
-                  key={it.id}
-                  selected={it.id === selectedItem}
-                  onClick={() => setSelectedItem(it.id)}
-                >
-                  <ListItemText
-                    primary={it.id}
-                    secondary={`Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`}
-                  />
-                </ListItemButton>
-              ))}
-            </List>
+            <ItemList
+              items={items}
+              selectedItem={selectedItem}
+              onItemSelect={setSelectedItem}
+              getSecondary={(it) =>
+                `Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`
+              }
+            />
           </Box>
           <Box flexGrow={1}>
-            {selectedItem && (
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="h6" align="center" gutterBottom>
-                  {selectedItem}
-                </Typography>
-                <Box height={400}>
-                  <Line data={chartData} />
-                </Box>
-              </Paper>
-            )}
+            <ItemChart selectedItem={selectedItem} history={history} />
           </Box>
         </Box>
       )}
