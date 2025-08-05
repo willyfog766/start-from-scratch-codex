@@ -3,6 +3,7 @@ import { Container, Typography, Box, Tabs, Tab } from '@mui/material'
 import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
+import ItemDetails from './components/ItemDetails'
 
 function App() {
   const [tab, setTab] = useState(0)
@@ -109,7 +110,8 @@ function App() {
                   }
                 />
               </Box>
-              <Box flexGrow={1}>
+              <Box flexGrow={1} display="flex" flexDirection="column" gap={2}>
+                <ItemDetails item={items.find((it) => it.id === selectedItem)} />
                 {historyError ? (
                   <Typography color="error">
                     Error loading history: {historyError}
