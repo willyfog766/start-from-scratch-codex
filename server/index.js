@@ -196,7 +196,7 @@ app.get('/api/items/:itemId/neural-prediction', async (req, res) => {
   if (normalized.length < 3) {
     return res.json({});
   }
-  const { prediction, modelExists, trained, dataPoints } = await predictNext(
+  const { prediction, interval, modelExists, trained, dataPoints } = await predictNext(
     itemId,
     normalized
   );
@@ -207,9 +207,14 @@ app.get('/api/items/:itemId/neural-prediction', async (req, res) => {
   const max = Math.max(...prices);
   const min = Math.min(...prices);
   const predictedPrice = prediction * (max - min) + min;
+  const delta = interval * (max - min);
   res.json({
     predictedPrice,
     normalizedPrediction: prediction,
+    interval: {
+      low: predictedPrice - delta,
+      high: predictedPrice + delta,
+    },
     modelExists,
     trained,
     dataPoints,

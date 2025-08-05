@@ -35,9 +35,30 @@ function loadModel(itemId) {
   return model;
 }
 
+function computeInterval(model, normalizedPrices) {
+  if (!Array.isArray(normalizedPrices) || normalizedPrices.length < 4) {
+    return 0;
+  }
+  const xs = [];
+  const ys = [];
+  for (let i = 0; i < normalizedPrices.length - 3; i++) {
+    xs.push(normalizedPrices.slice(i, i + 3));
+    ys.push(normalizedPrices[i + 3]);
+  }
+  return tf.tidy(() => {
+    const xsTensor = tf.tensor2d(xs);
+    const ysTensor = tf.tensor1d(ys);
+    const preds = model.predict(xsTensor);
+    const diff = preds.sub(ysTensor);
+    const mean = diff.mean();
+    const variance = diff.sub(mean).square().mean().dataSync()[0];
+    return Math.sqrt(variance);
+  });
+}
+
 async function trainModel(itemId, normalizedPrices) {
   if (!Array.isArray(normalizedPrices) || normalizedPrices.length < 4) {
-    return null;
+    return { prediction: null, interval: 0 };
   }
 
   const xs = [];
@@ -66,14 +87,17 @@ async function trainModel(itemId, normalizedPrices) {
     return output.dataSync()[0];
   });
 
+  const interval = computeInterval(model, normalizedPrices);
+
   model.dispose();
-  return Math.max(0, Math.min(1, result));
+  return { prediction: Math.max(0, Math.min(1, result)), interval };
 }
 
 async function predictNext(itemId, normalizedPrices) {
   if (!Array.isArray(normalizedPrices) || normalizedPrices.length < 3) {
     return {
       prediction: null,
+      interval: 0,
       modelExists: false,
       trained: false,
       dataPoints: Array.isArray(normalizedPrices) ? normalizedPrices.length : 0,
@@ -84,12 +108,19 @@ async function predictNext(itemId, normalizedPrices) {
   const dataPoints = normalizedPrices.length;
   if (!model) {
     if (normalizedPrices.length < 4) {
-      return { prediction: null, modelExists: false, trained: false, dataPoints };
+      return {
+        prediction: null,
+        interval: 0,
+        modelExists: false,
+        trained: false,
+        dataPoints,
+      };
     }
-    const prediction = await trainModel(itemId, normalizedPrices);
-    return { prediction, modelExists: false, trained: true, dataPoints };
+    const { prediction, interval } = await trainModel(itemId, normalizedPrices);
+    return { prediction, interval, modelExists: false, trained: true, dataPoints };
   }
 
+  const interval = computeInterval(model, normalizedPrices);
   const result = tf.tidy(() => {
     const input = tf.tensor2d([normalizedPrices.slice(-3)]);
     const output = model.predict(input);
@@ -99,6 +130,7 @@ async function predictNext(itemId, normalizedPrices) {
   model.dispose();
   return {
     prediction: Math.max(0, Math.min(1, result)),
+    interval,
     modelExists: true,
     trained: false,
     dataPoints,
@@ -114,10 +146,7 @@ async function trainVolatilityModel(itemId, normalizedChanges) {
 }
 
 async function predictVolatility(itemId, normalizedChanges) {
-  return predictNext(
-    withSuffix(itemId, 'VOLATILITY'),
-    normalizedChanges
-  );
+  return predictNext(withSuffix(itemId, 'VOLATILITY'), normalizedChanges);
 }
 
 module.exports = { trainModel, predictNext, trainVolatilityModel, predictVolatility };
