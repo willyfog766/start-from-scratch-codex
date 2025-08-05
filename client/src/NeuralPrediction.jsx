@@ -6,6 +6,7 @@ export default function NeuralPrediction({ itemId }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    if (!itemId) return
     let mounted = true
     const fetchPrediction = async () => {
       setLoading(true)
@@ -26,6 +27,10 @@ export default function NeuralPrediction({ itemId }) {
       mounted = false
     }
   }, [itemId])
+
+  if (!itemId) {
+    return <div>No item selected</div>
+  }
 
   if (loading) {
     return <div>Loading...</div>
