@@ -1,0 +1,15 @@
+{
+  "name": "Bazaar Tracker",
+  "short_name": "Bazaar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
