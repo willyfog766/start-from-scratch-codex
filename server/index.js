@@ -11,10 +11,7 @@ const {
   itemIdParamSchema,
   timeframeSchema,
 } = require('./validation');
-
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
-
+const { connect, BazaarItem } = require('./db');
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -34,21 +31,35 @@ const TIMEFRAMES = {
   '1w': 7 * 24 * 60 * 60 * 1000,
 };
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function loadData() {
+async function loadData() {
   try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    bazaarData = JSON.parse(raw);
+    await connect();
+    const docs = await BazaarItem.find({});
+    bazaarData = {};
+    docs.forEach(({ itemId, history, product }) => {
+      bazaarData[itemId] = { history, product };
+    });
   } catch (err) {
     bazaarData = {};
   }
 }
 
-function saveData() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(bazaarData, null, 2));
+async function saveData() {
+  try {
+    await connect();
+    const operations = Object.entries(bazaarData).map(([itemId, item]) => ({
+      updateOne: {
+        filter: { itemId },
+        update: { history: item.history, product: item.product },
+        upsert: true,
+      },
+    }));
+    if (operations.length) {
+      await BazaarItem.bulkWrite(operations);
+    }
+  } catch (err) {
+    console.error('DB save error', err);
+  }
 }
 
 loadData();
@@ -84,7 +95,7 @@ async function fetchBazaar() {
           delete bazaarData[id];
         }
       });
-      saveData();
+      await saveData();
     }
   } catch (err) {
     console.error('Fetch error', err);
