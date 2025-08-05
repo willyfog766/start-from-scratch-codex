@@ -31,6 +31,7 @@ function loadModel(itemId) {
   model.compile({ optimizer: 'sgd', loss: 'meanSquaredError' });
   const tensors = weightsData.map((w) => tf.tensor(w.data, w.shape));
   model.setWeights(tensors);
+  tensors.forEach((t) => t.dispose());
   return model;
 }
 
@@ -54,11 +55,18 @@ async function trainModel(itemId, normalizedPrices) {
   const xsTensor = tf.tensor2d(xs);
   const ysTensor = tf.tensor2d(ys, [ys.length, 1]);
   await model.fit(xsTensor, ysTensor, { epochs: 200, verbose: 0 });
+  xsTensor.dispose();
+  ysTensor.dispose();
 
   await saveModel(model, itemId);
 
-  const input = tf.tensor2d([normalizedPrices.slice(-3)]);
-  const result = model.predict(input).dataSync()[0];
+  const result = tf.tidy(() => {
+    const input = tf.tensor2d([normalizedPrices.slice(-3)]);
+    const output = model.predict(input);
+    return output.dataSync()[0];
+  });
+
+  model.dispose();
   return Math.max(0, Math.min(1, result));
 }
 
@@ -82,8 +90,13 @@ async function predictNext(itemId, normalizedPrices) {
     return { prediction, modelExists: false, trained: true, dataPoints };
   }
 
-  const input = tf.tensor2d([normalizedPrices.slice(-3)]);
-  const result = model.predict(input).dataSync()[0];
+  const result = tf.tidy(() => {
+    const input = tf.tensor2d([normalizedPrices.slice(-3)]);
+    const output = model.predict(input);
+    return output.dataSync()[0];
+  });
+
+  model.dispose();
   return {
     prediction: Math.max(0, Math.min(1, result)),
     modelExists: true,
@@ -101,7 +114,11 @@ async function trainVolatilityModel(itemId, normalizedChanges) {
 }
 
 async function predictVolatility(itemId, normalizedChanges) {
-  return predictNext(withSuffix(itemId, 'VOLATILITY'), normalizedChanges);
+  const { prediction } = await predictNext(
+    withSuffix(itemId, 'VOLATILITY'),
+    normalizedChanges
+  );
+  return prediction;
 }
 
 module.exports = { trainModel, predictNext, trainVolatilityModel, predictVolatility };
