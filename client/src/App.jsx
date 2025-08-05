@@ -58,12 +58,11 @@ function App() {
   }, [selectedItem, fetchHistory])
 
   const variations = [...items]
-    .map((it) => ({
-      id: it.id,
-      variation:
-        (it.quick_status.sellPrice || 0) - (it.quick_status.buyPrice || 0),
-    }))
-    .sort((a, b) => b.variation - a.variation)
+    .sort(
+      (a, b) =>
+        (b.quick_status.sellPrice || 0) - (b.quick_status.buyPrice || 0) -
+        ((a.quick_status.sellPrice || 0) - (a.quick_status.buyPrice || 0))
+    )
     .slice(0, 10)
 
   return (
@@ -89,11 +88,11 @@ function App() {
             <Box mt={2}>
               <ItemList
                 items={variations}
+                selectedItem={selectedItem}
                 onItemSelect={(id) => {
                   setSelectedItem(id)
                   setTab(1)
                 }}
-                getSecondary={(v) => `Variation: ${v.variation.toFixed(2)}`}
               />
             </Box>
           )}
@@ -104,9 +103,6 @@ function App() {
                   items={items}
                   selectedItem={selectedItem}
                   onItemSelect={setSelectedItem}
-                  getSecondary={(it) =>
-                    `Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`
-                  }
                 />
               </Box>
               <Box flexGrow={1}>

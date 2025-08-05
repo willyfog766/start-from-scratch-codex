@@ -1,21 +1,19 @@
-import { List, ListItemButton, ListItemText } from '@mui/material'
+import { Grid } from '@mui/material'
+import ItemCard from './ItemCard'
 
-function ItemList({ items, onItemSelect, selectedItem, getSecondary }) {
+function ItemList({ items, onItemSelect, selectedItem }) {
   return (
-    <List>
+    <Grid container spacing={2}>
       {items.map((item) => (
-        <ListItemButton
-          key={item.id}
-          selected={selectedItem === item.id}
-          onClick={() => onItemSelect(item.id)}
-        >
-          <ListItemText
-            primary={item.id}
-            secondary={getSecondary ? getSecondary(item) : null}
+        <Grid item xs={12} sm={6} md={4} key={item.id}>
+          <ItemCard
+            item={item}
+            selected={selectedItem === item.id}
+            onClick={() => onItemSelect(item.id)}
           />
-        </ListItemButton>
+        </Grid>
       ))}
-    </List>
+    </Grid>
   )
 }
 
