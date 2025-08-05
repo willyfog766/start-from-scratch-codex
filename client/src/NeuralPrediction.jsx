@@ -12,7 +12,9 @@ export default function NeuralPrediction({ itemId }) {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/items/${itemId}/neural-prediction`)
+        const res = await fetch(
+          `/api/items/${encodeURIComponent(itemId)}/neural-prediction`
+        )
         if (!res.ok) throw new Error('Network response was not ok')
         const data = await res.json()
         if (mounted) setInfo(data)

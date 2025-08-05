@@ -46,7 +46,9 @@ function App() {
     setHistoryLoading(true)
     setHistoryError(null)
     try {
-      const res = await fetch(`http://localhost:3001/api/items/${id}`)
+      const res = await fetch(
+        `http://localhost:3001/api/items/${encodeURIComponent(id)}`
+      )
       if (!res.ok) throw new Error('Network response was not ok')
       const json = await res.json()
       setHistory(json)

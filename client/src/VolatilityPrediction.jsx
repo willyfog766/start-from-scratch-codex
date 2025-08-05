@@ -12,7 +12,9 @@ export default function VolatilityPrediction({ itemId }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/items/${itemId}/volatility-prediction`);
+        const res = await fetch(
+          `/api/items/${encodeURIComponent(itemId)}/volatility-prediction`
+        );
         if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
         if (mounted) setVolatility(data.predictedVolatility);

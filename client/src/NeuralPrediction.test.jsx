@@ -36,3 +36,19 @@ test('renders placeholder when no item is selected', () => {
   expect(screen.getByText('No item selected')).toBeInTheDocument()
   expect(fakeFetch).not.toHaveBeenCalled()
 })
+
+test('encodes itemId in request URL', async () => {
+  const fakeFetch = vi.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({}),
+  })
+  global.fetch = fakeFetch
+
+  render(<NeuralPrediction itemId="BAD ITEM" />)
+  await waitFor(() => {
+    expect(fakeFetch).toHaveBeenCalled()
+  })
+  expect(fakeFetch).toHaveBeenCalledWith(
+    '/api/items/BAD%20ITEM/neural-prediction'
+  )
+})
