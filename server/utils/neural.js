@@ -114,11 +114,10 @@ async function trainVolatilityModel(itemId, normalizedChanges) {
 }
 
 async function predictVolatility(itemId, normalizedChanges) {
-  const { prediction } = await predictNext(
+  return predictNext(
     withSuffix(itemId, 'VOLATILITY'),
     normalizedChanges
   );
-  return prediction;
 }
 
 module.exports = { trainModel, predictNext, trainVolatilityModel, predictVolatility };
