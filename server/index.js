@@ -2,6 +2,8 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const { normalize } = require('./utils/preprocess');
+const { simpleNeuralPrediction } = require('./utils/neural');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
@@ -59,8 +61,10 @@ async function fetchBazaar() {
   }
 }
 
-fetchBazaar();
-setInterval(fetchBazaar, 60 * 1000);
+if (process.env.NODE_ENV !== 'test') {
+  fetchBazaar();
+  setInterval(fetchBazaar, 60 * 1000);
+}
 
 function predictNextPeak(itemData) {
   if (!itemData || itemData.length < 3) return null;
@@ -109,8 +113,27 @@ app.get('/api/items/:itemId/prediction', (req, res) => {
   res.json(prediction || {});
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.get('/api/items/:itemId/neural-prediction', (req, res) => {
+  const itemId = req.params.itemId.toUpperCase();
+  const history = bazaarData[itemId]?.history || [];
+  const normalized = normalize(history);
+  if (normalized.length < 3) {
+    return res.json({});
+  }
+  const predictedNorm = simpleNeuralPrediction(normalized);
+  const prices = history.map((h) => h.buyPrice);
+  const max = Math.max(...prices);
+  const min = Math.min(...prices);
+  const predictedPrice = predictedNorm * (max - min) + min;
+  res.json({ predictedPrice });
 });
+
+const PORT = process.env.PORT || 3001;
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+}
+
+module.exports = { app, bazaarData, predictNextPeak };
 
