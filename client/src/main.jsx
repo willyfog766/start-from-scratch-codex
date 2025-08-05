@@ -15,6 +15,27 @@ const theme = createTheme({
       paper: '#1e1e1e',
     },
   },
+  typography: {
+    fontFamily: 'Roboto, sans-serif',
+    h1: {
+      fontSize: '2rem',
+      fontWeight: 500,
+    },
+    body1: {
+      fontSize: '1rem',
+    },
+  },
+  spacing: 4,
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          textTransform: 'none',
+        },
+      },
+    },
+  },
 })
 
 createRoot(document.getElementById('root')).render(
