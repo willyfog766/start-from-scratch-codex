@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const { normalize } = require('./utils/preprocess');
-const { simpleNeuralPrediction } = require('./utils/neural');
+const { predictNext } = require('./utils/neural');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
@@ -113,14 +113,14 @@ app.get('/api/items/:itemId/prediction', (req, res) => {
   res.json(prediction || {});
 });
 
-app.get('/api/items/:itemId/neural-prediction', (req, res) => {
+app.get('/api/items/:itemId/neural-prediction', async (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
   const history = bazaarData[itemId]?.history || [];
   const normalized = normalize(history);
   if (normalized.length < 3) {
     return res.json({});
   }
-  const predictedNorm = simpleNeuralPrediction(normalized);
+  const predictedNorm = await predictNext(itemId, normalized);
   const prices = history.map((h) => h.buyPrice);
   const max = Math.max(...prices);
   const min = Math.min(...prices);
