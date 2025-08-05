@@ -6,7 +6,7 @@ interface ThemeState {
   toggle: () => void;
 }
 
-const useThemeStore = create<ThemeState>((set) => ({
+export const useThemeStore = create<ThemeState>((set) => ({
   theme: 'light',
   toggle: () =>
     set((s) => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
@@ -15,12 +15,13 @@ const useThemeStore = create<ThemeState>((set) => ({
 const ThemeContext = createContext(useThemeStore);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const store = useThemeStore;
-  const theme = store.getState().theme;
+  const theme = useThemeStore((s) => s.theme);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
-  return <ThemeContext.Provider value={store}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={useThemeStore}>{children}</ThemeContext.Provider>
+  );
 }
 
 export function useTheme() {
