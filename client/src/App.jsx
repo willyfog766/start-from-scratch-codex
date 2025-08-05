@@ -1,5 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Container, Typography, Box, Tabs, Tab, Select, MenuItem } from '@mui/material'
+import {
+  Container,
+  Typography,
+  Box,
+  Tabs,
+  Tab,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  useMediaQuery,
+} from '@mui/material'
 import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
@@ -20,6 +31,7 @@ function App() {
   const [variations, setVariations] = useState([])
   const [variationsLoading, setVariationsLoading] = useState(false)
   const [variationsError, setVariationsError] = useState(null)
+  const isMobile = useMediaQuery('(max-width:600px)')
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -141,17 +153,44 @@ function App() {
             </Box>
           )}
           {tab === 1 && (
-            <Box mt={2} display="flex" gap={2}>
-              <Box width="30%" maxHeight={400} sx={{ overflowY: 'auto' }}>
-                <ItemList
-                  items={items}
-                  selectedItem={selectedItem}
-                  onItemSelect={setSelectedItem}
-                  getSecondary={(it) =>
-                    `Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`
-                  }
-                />
-              </Box>
+            <Box
+              mt={2}
+              display="flex"
+              gap={2}
+              flexDirection={isMobile ? 'column' : 'row'}
+            >
+              {isMobile ? (
+                <FormControl fullWidth size="small">
+                  <InputLabel id="item-select-label">Item</InputLabel>
+                  <Select
+                    labelId="item-select-label"
+                    label="Item"
+                    value={selectedItem || ''}
+                    onChange={(e) => setSelectedItem(e.target.value)}
+                  >
+                    {items.map((it) => (
+                      <MenuItem key={it.id} value={it.id}>
+                        {it.id}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <Box
+                  width="30%"
+                  maxHeight={400}
+                  sx={{ overflowY: 'auto' }}
+                >
+                  <ItemList
+                    items={items}
+                    selectedItem={selectedItem}
+                    onItemSelect={setSelectedItem}
+                    getSecondary={(it) =>
+                      `Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`
+                    }
+                  />
+                </Box>
+              )}
               <Box flexGrow={1} display="flex" flexDirection="column" gap={2}>
                 <ItemDetails item={items.find((it) => it.id === selectedItem)} />
                 {historyError ? (
@@ -167,17 +206,44 @@ function App() {
             </Box>
           )}
           {tab === 2 && (
-            <Box mt={2} display="flex" gap={2}>
-              <Box width="30%" maxHeight={400} sx={{ overflowY: 'auto' }}>
-                <ItemList
-                  items={items}
-                  selectedItem={selectedItem}
-                  onItemSelect={setSelectedItem}
-                  getSecondary={(it) =>
-                    `Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`
-                  }
-                />
-              </Box>
+            <Box
+              mt={2}
+              display="flex"
+              gap={2}
+              flexDirection={isMobile ? 'column' : 'row'}
+            >
+              {isMobile ? (
+                <FormControl fullWidth size="small">
+                  <InputLabel id="neural-item-select-label">Item</InputLabel>
+                  <Select
+                    labelId="neural-item-select-label"
+                    label="Item"
+                    value={selectedItem || ''}
+                    onChange={(e) => setSelectedItem(e.target.value)}
+                  >
+                    {items.map((it) => (
+                      <MenuItem key={it.id} value={it.id}>
+                        {it.id}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <Box
+                  width="30%"
+                  maxHeight={400}
+                  sx={{ overflowY: 'auto' }}
+                >
+                  <ItemList
+                    items={items}
+                    selectedItem={selectedItem}
+                    onItemSelect={setSelectedItem}
+                    getSecondary={(it) =>
+                      `Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`
+                    }
+                  />
+                </Box>
+              )}
               <Box flexGrow={1}>
                 <NeuralPrediction itemId={selectedItem} />
               </Box>

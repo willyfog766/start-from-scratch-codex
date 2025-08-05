@@ -6,18 +6,28 @@ export default function VolatilityPrediction({ itemId }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!itemId) return;
+    if (!itemId || typeof itemId !== 'string') {
+      setError('Invalid item ID');
+      setVolatility(null);
+      return;
+    }
     let mounted = true;
     const fetchVolatility = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/items/${itemId}/volatility-prediction`);
-        if (!res.ok) throw new Error('Network response was not ok');
+        const res = await fetch(
+          `/api/items/${encodeURIComponent(itemId)}/volatility-prediction`
+        );
+        if (!res.ok) {
+          let message = 'Failed to load prediction';
+          if (res.status === 404) message = 'Prediction not found';
+          throw new Error(message);
+        }
         const data = await res.json();
         if (mounted) setVolatility(data.predictedVolatility);
       } catch (err) {
-        if (mounted) setError(err.message);
+        if (mounted) setError(err.message || 'Unknown error');
       } finally {
         if (mounted) setLoading(false);
       }

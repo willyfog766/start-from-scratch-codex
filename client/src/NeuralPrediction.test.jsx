@@ -36,3 +36,23 @@ test('renders placeholder when no item is selected', () => {
   expect(screen.getByText('No item selected')).toBeInTheDocument()
   expect(fakeFetch).not.toHaveBeenCalled()
 })
+
+test('handles API errors gracefully', async () => {
+  const fakeFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
+  global.fetch = fakeFetch
+
+  render(<NeuralPrediction itemId="TEST" />)
+
+  await waitFor(() => {
+    expect(screen.getByText(/Error:/)).toBeInTheDocument()
+  })
+  expect(screen.getByText('Error: Failed to load prediction')).toBeInTheDocument()
+})
+
+test('shows error for invalid item id', async () => {
+  render(<NeuralPrediction itemId={123} />)
+
+  await waitFor(() => {
+    expect(screen.getByText('Error: Invalid item ID')).toBeInTheDocument()
+  })
+})
