@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Container, Typography, Box, Tabs, Tab } from '@mui/material'
+import { Container, Typography, Box, Tabs, Tab, Card } from '@mui/material'
 import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
@@ -99,7 +99,7 @@ function App() {
           )}
           {tab === 1 && (
             <Box mt={2} display="flex" gap={2}>
-              <Box width="30%" maxHeight={400} sx={{ overflowY: 'auto' }}>
+              <Card sx={{ width: '30%', maxHeight: 400, overflowY: 'auto', p: 0 }}>
                 <ItemList
                   items={items}
                   selectedItem={selectedItem}
@@ -108,18 +108,24 @@ function App() {
                     `Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`
                   }
                 />
-              </Box>
-              <Box flexGrow={1}>
-                {historyError ? (
+              </Card>
+              {historyError ? (
+                <Card sx={{ flexGrow: 1, p: 2 }}>
                   <Typography color="error">
                     Error loading history: {historyError}
                   </Typography>
-                ) : historyLoading ? (
+                </Card>
+              ) : historyLoading ? (
+                <Card sx={{ flexGrow: 1, p: 2 }}>
                   <Typography>Loading history...</Typography>
-                ) : (
-                  <ItemChart selectedItem={selectedItem} history={history} />
-                )}
-              </Box>
+                </Card>
+              ) : (
+                <ItemChart
+                  selectedItem={selectedItem}
+                  history={history}
+                  sx={{ flexGrow: 1 }}
+                />
+              )}
             </Box>
           )}
         </>

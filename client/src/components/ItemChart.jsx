@@ -1,9 +1,10 @@
-import { Paper, Typography, Box } from '@mui/material'
+import { Card, Typography, Box, useTheme } from '@mui/material'
 import { Line } from 'react-chartjs-2'
 import 'chart.js/auto'
 import NeuralPrediction from '../NeuralPrediction'
 
-function ItemChart({ selectedItem, history }) {
+function ItemChart({ selectedItem, history, sx = {} }) {
+  const theme = useTheme()
   if (!selectedItem) return null
 
   const chartData = {
@@ -12,20 +13,20 @@ function ItemChart({ selectedItem, history }) {
       {
         label: 'Buy Price',
         data: history.map((h) => h.buyPrice),
-        borderColor: 'rgb(75,192,192)',
+        borderColor: theme.palette.success.main,
         fill: false,
       },
       {
         label: 'Sell Price',
         data: history.map((h) => h.sellPrice),
-        borderColor: 'rgb(192,75,75)',
+        borderColor: theme.palette.error.main,
         fill: false,
       },
     ],
   }
 
   return (
-    <Paper sx={{ p: 2 }}>
+    <Card sx={{ p: 2, ...sx }}>
       <Typography variant="h6" align="center" gutterBottom>
         {selectedItem}
       </Typography>
@@ -35,7 +36,7 @@ function ItemChart({ selectedItem, history }) {
       <Box mt={2}>
         <NeuralPrediction itemId={selectedItem} />
       </Box>
-    </Paper>
+    </Card>
   )
 }
 
