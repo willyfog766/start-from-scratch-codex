@@ -8,6 +8,8 @@ const {
   itemIdParamSchema,
   timeframeSchema,
 } = require('./validation');
+const { connect, upsertItem, getAllItems } = require('./db');
+
 const { connect, BazaarItem } = require('./db');
 const app = express();
 app.use(cors());
@@ -24,6 +26,14 @@ const TIMEFRAMES = {
 };
 
 async function loadData() {
+  await connect();
+  const data = await getAllItems();
+  bazaarData = data || {};
+}
+
+async function saveData() {
+  const entries = Object.entries(bazaarData);
+  await Promise.all(entries.map(([id, data]) => upsertItem(id, data)));
   try {
     await connect();
     const docs = await BazaarItem.find({});
@@ -53,8 +63,6 @@ async function saveData() {
     console.error('DB save error', err);
   }
 }
-
-loadData();
 
 async function fetchBazaar() {
   try {
@@ -95,8 +103,10 @@ async function fetchBazaar() {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  fetchBazaar();
-  setInterval(fetchBazaar, 60 * 1000);
+  loadData().then(() => {
+    fetchBazaar();
+    setInterval(fetchBazaar, 60 * 1000);
+  });
 }
 
 function predictNextPeak(itemData) {
