@@ -10,6 +10,7 @@ const {
 } = require('./validation');
 const { connect, upsertItem, getAllItems } = require('./db');
 
+const { connect, BazaarItem } = require('./db');
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -33,6 +34,34 @@ async function loadData() {
 async function saveData() {
   const entries = Object.entries(bazaarData);
   await Promise.all(entries.map(([id, data]) => upsertItem(id, data)));
+  try {
+    await connect();
+    const docs = await BazaarItem.find({});
+    bazaarData = {};
+    docs.forEach(({ itemId, history, product }) => {
+      bazaarData[itemId] = { history, product };
+    });
+  } catch (err) {
+    bazaarData = {};
+  }
+}
+
+async function saveData() {
+  try {
+    await connect();
+    const operations = Object.entries(bazaarData).map(([itemId, item]) => ({
+      updateOne: {
+        filter: { itemId },
+        update: { history: item.history, product: item.product },
+        upsert: true,
+      },
+    }));
+    if (operations.length) {
+      await BazaarItem.bulkWrite(operations);
+    }
+  } catch (err) {
+    console.error('DB save error', err);
+  }
 }
 
 async function fetchBazaar() {
