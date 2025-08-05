@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { router } from './routes';
+import App from './App';
 import './index.css';
 import { ThemeProvider } from './store/theme';
 
@@ -12,7 +11,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <App />
       </QueryClientProvider>
     </ThemeProvider>
   </React.StrictMode>,
