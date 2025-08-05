@@ -2,8 +2,8 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-const { normalize } = require('./utils/preprocess');
-const { predictNext } = require('./utils/neural');
+const { normalize, volatility } = require('./utils/preprocess');
+const { predictNext, predictVolatility } = require('./utils/neural');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
@@ -126,6 +126,24 @@ app.get('/api/items/:itemId/neural-prediction', async (req, res) => {
   const min = Math.min(...prices);
   const predictedPrice = predictedNorm * (max - min) + min;
   res.json({ predictedPrice });
+});
+
+app.get('/api/items/:itemId/volatility-prediction', async (req, res) => {
+  const itemId = req.params.itemId.toUpperCase();
+  const history = bazaarData[itemId]?.history || [];
+  const volSeries = volatility(history);
+  if (volSeries.length < 3) {
+    return res.json({});
+  }
+  const predictedNorm = await predictVolatility(itemId, volSeries);
+  const changes = [];
+  for (let i = 1; i < history.length; i++) {
+    changes.push(Math.abs(history[i].buyPrice - history[i - 1].buyPrice));
+  }
+  const max = Math.max(...changes);
+  const min = Math.min(...changes);
+  const predictedVolatility = predictedNorm * (max - min) + min;
+  res.json({ predictedVolatility });
 });
 
 const PORT = process.env.PORT || 3001;

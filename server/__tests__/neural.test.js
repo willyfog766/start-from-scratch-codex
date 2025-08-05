@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const { trainModel, predictNext } = require('../utils/neural');
+const {
+  trainModel,
+  predictNext,
+  trainVolatilityModel,
+  predictVolatility,
+} = require('../utils/neural');
 
 describe('neural model utilities', () => {
   const modelFile = path.join(__dirname, '../data/TEST-model.json');
@@ -17,6 +22,28 @@ describe('neural model utilities', () => {
     expect(typeof pred).toBe('number');
     expect(fs.existsSync(modelFile)).toBe(true);
     const again = await predictNext('TEST', data);
+    expect(typeof again).toBe('number');
+  });
+});
+
+describe('volatility model utilities', () => {
+  const modelFile = path.join(
+    __dirname,
+    '../data/TEST-VOLATILITY-model.json'
+  );
+
+  afterEach(() => {
+    if (fs.existsSync(modelFile)) {
+      fs.unlinkSync(modelFile);
+    }
+  });
+
+  test('trains model and makes volatility prediction', async () => {
+    const data = [0.1, 0.2, 0.1, 0.3];
+    const pred = await trainVolatilityModel('TEST', data);
+    expect(typeof pred).toBe('number');
+    expect(fs.existsSync(modelFile)).toBe(true);
+    const again = await predictVolatility('TEST', data);
     expect(typeof again).toBe('number');
   });
 });
