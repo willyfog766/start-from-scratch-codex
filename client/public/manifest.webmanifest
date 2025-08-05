@@ -1,0 +1,15 @@
+{
+  "name": "Hypixel Bazaar Tracker",
+  "short_name": "Bazaar",
+  "display": "standalone",
+  "start_url": "/",
+  "background_color": "#fafafa",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
