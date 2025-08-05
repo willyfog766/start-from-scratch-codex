@@ -28,6 +28,9 @@ describe('GET /api/items/:id/neural-prediction', () => {
     expect(res.status).toBe(200);
     expect(res.body.predictedPrice).toBeGreaterThan(30);
     expect(res.body.predictedPrice).toBeLessThanOrEqual(40);
+    expect(res.body.interval.low).toBeLessThanOrEqual(res.body.interval.high);
+    expect(res.body.interval.low).toBeLessThanOrEqual(res.body.predictedPrice);
+    expect(res.body.interval.high).toBeGreaterThanOrEqual(res.body.predictedPrice);
     expect(res.body.modelExists).toBe(false);
     expect(res.body.trained).toBe(true);
     expect(res.body.dataPoints).toBe(4);

@@ -19,11 +19,13 @@ describe('neural model utilities', () => {
 
   test('trains model and makes prediction', async () => {
     const data = [0.1, 0.2, 0.3, 0.4];
-    const pred = await trainModel('TEST', data);
+    const { prediction: pred, interval } = await trainModel('TEST', data);
     expect(typeof pred).toBe('number');
+    expect(typeof interval).toBe('number');
     expect(fs.existsSync(modelFile)).toBe(true);
     const info = await predictNext('TEST', data);
     expect(typeof info.prediction).toBe('number');
+    expect(typeof info.interval).toBe('number');
     expect(info.modelExists).toBe(true);
     expect(info.trained).toBe(false);
   });
@@ -54,11 +56,13 @@ describe('volatility model utilities', () => {
 
   test('trains model and makes volatility prediction', async () => {
     const data = [0.1, 0.2, 0.1, 0.3];
-    const pred = await trainVolatilityModel('TEST', data);
+    const { prediction: pred, interval } = await trainVolatilityModel('TEST', data);
     expect(typeof pred).toBe('number');
+    expect(typeof interval).toBe('number');
     expect(fs.existsSync(modelFile)).toBe(true);
     const info = await predictVolatility('TEST', data);
     expect(typeof info.prediction).toBe('number');
+    expect(typeof info.interval).toBe('number');
     expect(info.modelExists).toBe(true);
     expect(info.trained).toBe(false);
   });
