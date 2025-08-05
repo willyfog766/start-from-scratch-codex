@@ -14,6 +14,13 @@ const bazaarItemSchema = new mongoose.Schema({
 
 const BazaarItem = mongoose.model('BazaarItem', bazaarItemSchema);
 
+const bazaarSnapshotSchema = new mongoose.Schema({
+  timestamp: { type: Date, default: Date.now },
+  data: mongoose.Schema.Types.Mixed,
+});
+
+const BazaarSnapshot = mongoose.model('BazaarSnapshot', bazaarSnapshotSchema);
+
 async function connect(uri = process.env.MONGO_URI || 'mongodb://localhost:27017/bazaar') {
   if (mongoose.connection.readyState === 1) return;
   await mongoose.connect(uri, {
@@ -22,4 +29,4 @@ async function connect(uri = process.env.MONGO_URI || 'mongodb://localhost:27017
   });
 }
 
-module.exports = { connect, BazaarItem };
+module.exports = { connect, BazaarItem, BazaarSnapshot };

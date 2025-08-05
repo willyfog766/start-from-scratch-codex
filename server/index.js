@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const schedule = require('node-schedule');
 const { normalize, volatility, ema } = require('./utils/preprocess');
 const { predictNext, predictVolatility } = require('./utils/neural');
 const {
@@ -8,12 +9,14 @@ const {
   itemIdParamSchema,
   timeframeSchema,
 } = require('./validation');
-const { connect, BazaarItem } = require('./db');
+const { connect, BazaarItem, BazaarSnapshot } = require('./db');
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 
 let bazaarData = {};
+let latestSnapshot = null;
 
 const TIMEFRAMES = {
   '1m': 60 * 1000,
@@ -63,6 +66,9 @@ async function fetchBazaar() {
     const time = Date.now();
 
     if (json && json.products) {
+      await connect();
+      latestSnapshot = json;
+      await BazaarSnapshot.create({ data: json, timestamp: new Date(time) });
       Object.entries(json.products).forEach(([id, data]) => {
         const parsedProduct = productSchema.safeParse(data);
         if (!parsedProduct.success) {
@@ -96,7 +102,7 @@ async function fetchBazaar() {
 
 if (process.env.NODE_ENV !== 'test') {
   fetchBazaar();
-  setInterval(fetchBazaar, 60 * 1000);
+  schedule.scheduleJob('*/1 * * * *', fetchBazaar);
 }
 
 function predictNextPeak(itemData) {
@@ -121,6 +127,19 @@ function predictNextPeak(itemData) {
     predictedPrice: lastPeak.buyPrice + avgIncrease,
   };
 }
+
+app.get('/api/products', async (req, res) => {
+  try {
+    if (latestSnapshot) {
+      return res.json(latestSnapshot);
+    }
+    await connect();
+    const snap = await BazaarSnapshot.findOne().sort({ timestamp: -1 });
+    res.json(snap ? snap.data : {});
+  } catch (err) {
+    res.status(500).json({});
+  }
+});
 
 app.get('/api/items', (req, res) => {
   const items = Object.entries(bazaarData)
@@ -273,5 +292,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, bazaarData, predictNextPeak };
+module.exports = { app, bazaarData, predictNextPeak, fetchBazaar };
 
