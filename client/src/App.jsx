@@ -3,7 +3,10 @@ import { Container, Typography, Box, Tabs, Tab, Select, MenuItem } from '@mui/ma
 import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
+codex/show-item-data-on-press
+import ItemData from './components/ItemData'
 import NeuralPrediction from './NeuralPrediction'
+main
 
 function App() {
   const [tab, setTab] = useState(0)
@@ -158,7 +161,10 @@ function App() {
                 ) : historyLoading ? (
                   <Typography>Loading history...</Typography>
                 ) : (
-                  <ItemChart selectedItem={selectedItem} history={history} />
+                  <>
+                    <ItemChart selectedItem={selectedItem} history={history} />
+                    <ItemData itemId={selectedItem} />
+                  </>
                 )}
               </Box>
             </Box>
