@@ -3,6 +3,7 @@ import { Container, Typography, Box, Tabs, Tab } from '@mui/material'
 import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
+import NeuralPrediction from './NeuralPrediction'
 
 function App() {
   const [tab, setTab] = useState(0)
@@ -84,6 +85,7 @@ function App() {
           <Tabs value={tab} onChange={(e, v) => setTab(v)} centered>
             <Tab label="Top Variation" />
             <Tab label="All Items" />
+            <Tab label="Neural Tracker" />
           </Tabs>
           {tab === 0 && (
             <Box mt={2}>
@@ -119,6 +121,23 @@ function App() {
                 ) : (
                   <ItemChart selectedItem={selectedItem} history={history} />
                 )}
+              </Box>
+            </Box>
+          )}
+          {tab === 2 && (
+            <Box mt={2} display="flex" gap={2}>
+              <Box width="30%" maxHeight={400} sx={{ overflowY: 'auto' }}>
+                <ItemList
+                  items={items}
+                  selectedItem={selectedItem}
+                  onItemSelect={setSelectedItem}
+                  getSecondary={(it) =>
+                    `Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`
+                  }
+                />
+              </Box>
+              <Box flexGrow={1}>
+                <NeuralPrediction itemId={selectedItem} />
               </Box>
             </Box>
           )}

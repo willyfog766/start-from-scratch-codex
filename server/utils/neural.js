@@ -64,18 +64,32 @@ async function trainModel(itemId, normalizedPrices) {
 
 async function predictNext(itemId, normalizedPrices) {
   if (!Array.isArray(normalizedPrices) || normalizedPrices.length < 3) {
-    return null;
+    return {
+      prediction: null,
+      modelExists: false,
+      trained: false,
+      dataPoints: Array.isArray(normalizedPrices) ? normalizedPrices.length : 0,
+    };
   }
 
   let model = loadModel(itemId);
+  const dataPoints = normalizedPrices.length;
   if (!model) {
-    if (normalizedPrices.length < 4) return null;
-    return trainModel(itemId, normalizedPrices);
+    if (normalizedPrices.length < 4) {
+      return { prediction: null, modelExists: false, trained: false, dataPoints };
+    }
+    const prediction = await trainModel(itemId, normalizedPrices);
+    return { prediction, modelExists: false, trained: true, dataPoints };
   }
 
   const input = tf.tensor2d([normalizedPrices.slice(-3)]);
   const result = model.predict(input).dataSync()[0];
-  return Math.max(0, Math.min(1, result));
+  return {
+    prediction: Math.max(0, Math.min(1, result)),
+    modelExists: true,
+    trained: false,
+    dataPoints,
+  };
 }
 
 module.exports = { trainModel, predictNext };
