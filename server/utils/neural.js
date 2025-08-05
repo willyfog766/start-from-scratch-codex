@@ -78,5 +78,17 @@ async function predictNext(itemId, normalizedPrices) {
   return Math.max(0, Math.min(1, result));
 }
 
-module.exports = { trainModel, predictNext };
+function withSuffix(itemId, suffix) {
+  return `${itemId}-${suffix}`;
+}
+
+async function trainVolatilityModel(itemId, normalizedChanges) {
+  return trainModel(withSuffix(itemId, 'VOLATILITY'), normalizedChanges);
+}
+
+async function predictVolatility(itemId, normalizedChanges) {
+  return predictNext(withSuffix(itemId, 'VOLATILITY'), normalizedChanges);
+}
+
+module.exports = { trainModel, predictNext, trainVolatilityModel, predictVolatility };
 
