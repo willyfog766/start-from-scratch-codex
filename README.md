@@ -8,6 +8,9 @@ prices and simple predictions.
 The **client** is a React (Vite) frontend that consumes these endpoints to show
 lists, charts and other visualisations.
 
+## Requirements
+- Node.js 20.19 or newer. Older versions (such as Node 18) will fail to run the Vite dev server with an error similar to `crypto.hash is not a function`.
+
 ## Installation
 Install dependencies in the repository and in the client:
 
@@ -17,13 +20,13 @@ npm install --prefix client
 ```
 
 ## Running
-Start the server:
+Start the server from the repository root:
 
 ```bash
-npm run start
+npm start
 ```
 
-Start the client in a separate terminal:
+Start the client in a separate terminal (requires Node 20+):
 
 ```bash
 npm run dev --prefix client
