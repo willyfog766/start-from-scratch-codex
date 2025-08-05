@@ -1,6 +1,4 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const cors = require('cors');
 const { normalize, volatility, ema } = require('./utils/preprocess');
 const { predictNext, predictVolatility } = require('./utils/neural');
@@ -10,9 +8,7 @@ const {
   itemIdParamSchema,
   timeframeSchema,
 } = require('./validation');
-
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
+const { connect, upsertItem, getAllItems } = require('./db');
 
 const app = express();
 app.use(cors());
@@ -28,24 +24,16 @@ const TIMEFRAMES = {
   '1w': 7 * 24 * 60 * 60 * 1000,
 };
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+async function loadData() {
+  await connect();
+  const data = await getAllItems();
+  bazaarData = data || {};
 }
 
-function loadData() {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    bazaarData = JSON.parse(raw);
-  } catch (err) {
-    bazaarData = {};
-  }
+async function saveData() {
+  const entries = Object.entries(bazaarData);
+  await Promise.all(entries.map(([id, data]) => upsertItem(id, data)));
 }
-
-function saveData() {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(bazaarData, null, 2));
-}
-
-loadData();
 
 async function fetchBazaar() {
   try {
@@ -78,7 +66,7 @@ async function fetchBazaar() {
           delete bazaarData[id];
         }
       });
-      saveData();
+      await saveData();
     }
   } catch (err) {
     console.error('Fetch error', err);
@@ -86,8 +74,10 @@ async function fetchBazaar() {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  fetchBazaar();
-  setInterval(fetchBazaar, 60 * 1000);
+  loadData().then(() => {
+    fetchBazaar();
+    setInterval(fetchBazaar, 60 * 1000);
+  });
 }
 
 function predictNextPeak(itemData) {
