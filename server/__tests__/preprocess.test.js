@@ -1,4 +1,4 @@
-const { normalize, volatility } = require('../utils/preprocess');
+const { normalize, volatility, ema } = require('../utils/preprocess');
 
 describe('normalize', () => {
   test('scales prices between 0 and 1', () => {
@@ -28,5 +28,16 @@ describe('volatility', () => {
 
   test('returns empty array for insufficient data', () => {
     expect(volatility([{ buyPrice: 10 }])).toEqual([]);
+  });
+});
+
+describe('ema', () => {
+  test('computes exponential moving average', () => {
+    const series = [10, 20, 30, 40];
+    expect(ema(series, 2)).toEqual([15, 25, 35]);
+  });
+
+  test('returns empty array for invalid input', () => {
+    expect(ema([10], 2)).toEqual([]);
   });
 });

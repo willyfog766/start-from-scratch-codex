@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-const { normalize, volatility } = require('./utils/preprocess');
+const { normalize, volatility, ema } = require('./utils/preprocess');
 const { predictNext, predictVolatility } = require('./utils/neural');
 const {
   bazaarItemSchema,
@@ -165,6 +165,14 @@ app.get('/api/items/:itemId/full', (req, res) => {
   }
   const item = bazaarItemSchema.safeParse(bazaarData[itemId]);
   res.json(item.success ? item.data.product || {} : {});
+});
+
+app.get('/api/items/:itemId/ema', (req, res) => {
+  const itemId = req.params.itemId.toUpperCase();
+  const period = parseInt(req.query.period, 10);
+  const history = bazaarData[itemId]?.history || [];
+  const series = history.map((h) => h.buyPrice);
+  res.json(ema(series, period));
 });
 
 app.get('/api/items/:itemId/prediction', (req, res) => {
