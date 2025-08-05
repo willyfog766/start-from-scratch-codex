@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const predictor = require('./model/predictor');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
@@ -46,6 +47,9 @@ async function fetchBazaar() {
           time,
           buyPrice: data.quick_status.buyPrice,
           sellPrice: data.quick_status.sellPrice,
+          sell_summary: data.sell_summary,
+          buy_summary: data.buy_summary,
+          quick_status: data.quick_status,
         });
         if (bazaarData[id].history.length > 100) {
           bazaarData[id].history.shift();
@@ -53,6 +57,7 @@ async function fetchBazaar() {
         bazaarData[id].product = data;
       });
       saveData();
+      await predictor.train(bazaarData);
     }
   } catch (err) {
     console.error('Fetch error', err);
@@ -107,6 +112,12 @@ app.get('/api/items/:itemId/prediction', (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
   const prediction = predictNextPeak(bazaarData[itemId]?.history);
   res.json(prediction || {});
+});
+
+app.get('/api/items/:itemId/neural-prediction', (req, res) => {
+  const itemId = req.params.itemId.toUpperCase();
+  const result = predictor.predict(itemId, bazaarData);
+  res.json(result || {});
 });
 
 const PORT = process.env.PORT || 3001;
