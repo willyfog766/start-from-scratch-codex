@@ -1,14 +1,24 @@
-const { simpleNeuralPrediction } = require('../utils/neural');
+const fs = require('fs');
+const path = require('path');
+const { trainModel, predictNext } = require('../utils/neural');
 
-describe('simpleNeuralPrediction', () => {
-  test('computes weighted sum of last three values', () => {
-    const normalized = [0.2, 0.4, 0.6, 0.8];
-    const result = simpleNeuralPrediction(normalized);
-    // 0.5*0.4 + 0.3*0.6 + 0.2*0.8 = 0.54
-    expect(result).toBeCloseTo(0.54);
+describe('neural model utilities', () => {
+  const modelFile = path.join(__dirname, '../data/TEST-model.json');
+
+  afterEach(() => {
+    if (fs.existsSync(modelFile)) {
+      fs.unlinkSync(modelFile);
+    }
   });
 
-  test('returns null when not enough data', () => {
-    expect(simpleNeuralPrediction([0.1, 0.2])).toBeNull();
+  test('trains model and makes prediction', async () => {
+    const data = [0.1, 0.2, 0.3, 0.4];
+    const pred = await trainModel('TEST', data);
+    expect(typeof pred).toBe('number');
+    expect(fs.existsSync(modelFile)).toBe(true);
+    const again = await predictNext('TEST', data);
+    expect(typeof again).toBe('number');
   });
 });
+
+
