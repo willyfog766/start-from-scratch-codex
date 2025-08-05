@@ -4,11 +4,24 @@ const tf = require('@tensorflow/tfjs');
 
 const MODEL_DIR = path.join(__dirname, '..', 'data');
 
+const VALID_ITEM_ID_REGEX = /^[A-Za-z0-9_-]+$/;
+
+function isValidItemId(itemId) {
+  return typeof itemId === 'string' && VALID_ITEM_ID_REGEX.test(itemId);
+}
+
 function getModelPath(itemId) {
-  return path.join(MODEL_DIR, `${itemId}-model.json`);
+  if (!isValidItemId(itemId)) return null;
+  const filename = `${itemId}-model.json`;
+  const resolvedPath = path.resolve(MODEL_DIR, filename);
+  const resolvedDir = path.resolve(MODEL_DIR) + path.sep;
+  if (!resolvedPath.startsWith(resolvedDir)) return null;
+  return resolvedPath;
 }
 
 async function saveModel(model, itemId) {
+  const filePath = getModelPath(itemId);
+  if (!filePath) return;
   if (!fs.existsSync(MODEL_DIR)) {
     fs.mkdirSync(MODEL_DIR, { recursive: true });
   }
@@ -18,12 +31,12 @@ async function saveModel(model, itemId) {
       shape: w.shape,
     }))
   );
-  fs.writeFileSync(getModelPath(itemId), JSON.stringify(weights));
+  fs.writeFileSync(filePath, JSON.stringify(weights));
 }
 
 function loadModel(itemId) {
   const file = getModelPath(itemId);
-  if (!fs.existsSync(file)) return null;
+  if (!file || !fs.existsSync(file)) return null;
   const weightsData = JSON.parse(fs.readFileSync(file, 'utf-8'));
   const model = tf.sequential();
   model.add(tf.layers.dense({ inputShape: [3], units: 8, activation: 'relu' }));
@@ -35,7 +48,7 @@ function loadModel(itemId) {
 }
 
 async function trainModel(itemId, normalizedPrices) {
-  if (!Array.isArray(normalizedPrices) || normalizedPrices.length < 4) {
+  if (!isValidItemId(itemId) || !Array.isArray(normalizedPrices) || normalizedPrices.length < 4) {
     return null;
   }
 
@@ -63,7 +76,7 @@ async function trainModel(itemId, normalizedPrices) {
 }
 
 async function predictNext(itemId, normalizedPrices) {
-  if (!Array.isArray(normalizedPrices) || normalizedPrices.length < 3) {
+  if (!isValidItemId(itemId) || !Array.isArray(normalizedPrices) || normalizedPrices.length < 3) {
     return {
       prediction: null,
       modelExists: false,
@@ -101,7 +114,11 @@ async function trainVolatilityModel(itemId, normalizedChanges) {
 }
 
 async function predictVolatility(itemId, normalizedChanges) {
-  return predictNext(withSuffix(itemId, 'VOLATILITY'), normalizedChanges);
+  const result = await predictNext(
+    withSuffix(itemId, 'VOLATILITY'),
+    normalizedChanges,
+  );
+  return result ? result.prediction : null;
 }
 
 module.exports = { trainModel, predictNext, trainVolatilityModel, predictVolatility };
