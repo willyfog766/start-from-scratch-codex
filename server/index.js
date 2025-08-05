@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const Redis = require('ioredis');
 const { normalize, volatility, ema } = require('./utils/preprocess');
 const { predictNext, predictVolatility } = require('./utils/neural');
 const {
@@ -14,6 +15,50 @@ app.use(cors());
 app.use(express.json());
 
 let bazaarData = {};
+
+let redisClient = null;
+const localCache = new Map();
+
+if (process.env.REDIS_URL) {
+  redisClient = new Redis(process.env.REDIS_URL);
+  redisClient.on('error', (err) => console.error('Redis error', err));
+}
+
+async function cacheGet(key) {
+  if (redisClient) {
+    try {
+      return await redisClient.get(key);
+    } catch (err) {
+      console.error('Redis get error', err);
+    }
+  }
+  return localCache.get(key);
+}
+
+async function cacheSet(key, value, ttl = 60) {
+  if (redisClient) {
+    try {
+      await redisClient.set(key, value, 'EX', ttl);
+      return;
+    } catch (err) {
+      console.error('Redis set error', err);
+    }
+  }
+  localCache.set(key, value);
+  setTimeout(() => localCache.delete(key), ttl * 1000).unref();
+}
+
+async function cacheDel(key) {
+  if (redisClient) {
+    try {
+      await redisClient.del(key);
+      return;
+    } catch (err) {
+      console.error('Redis del error', err);
+    }
+  }
+  localCache.delete(key);
+}
 
 const TIMEFRAMES = {
   '1m': 60 * 1000,
@@ -87,6 +132,8 @@ async function fetchBazaar() {
           delete bazaarData[id];
         }
       });
+      saveData();
+      await cacheDel('items');
       await saveData();
     }
   } catch (err) {
@@ -122,13 +169,19 @@ function predictNextPeak(itemData) {
   };
 }
 
-app.get('/api/items', (req, res) => {
+app.get('/api/items', async (req, res) => {
+  const cacheKey = 'items';
+  const cached = await cacheGet(cacheKey);
+  if (cached) {
+    return res.json(JSON.parse(cached));
+  }
   const items = Object.entries(bazaarData)
     .filter(([, item]) => bazaarItemSchema.safeParse(item).success)
     .map(([id, item]) => ({
       id,
       quick_status: item.product?.quick_status || {},
     }));
+  await cacheSet(cacheKey, JSON.stringify(items));
   res.json(items);
 });
 
@@ -273,5 +326,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, bazaarData, predictNextPeak };
+module.exports = { app, bazaarData, predictNextPeak, fetchBazaar };
 
