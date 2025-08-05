@@ -4,6 +4,8 @@ import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
 
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 function App() {
   const [tab, setTab] = useState(0)
   const [items, setItems] = useState([])
@@ -11,7 +13,7 @@ function App() {
   const [history, setHistory] = useState([])
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/items')
+    fetch(`${API_URL}/api/items`)
       .then((res) => res.json())
       .then((data) => {
         setItems(data)
@@ -22,7 +24,7 @@ function App() {
   }, [])
 
   const fetchHistory = useCallback(async (id) => {
-    const res = await fetch(`http://localhost:3001/api/items/${id}`)
+    const res = await fetch(`${API_URL}/api/items/${id}`)
     const json = await res.json()
     setHistory(json)
   }, [])
@@ -85,3 +87,4 @@ function App() {
 }
 
 export default App
+
