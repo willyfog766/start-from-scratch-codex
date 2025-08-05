@@ -152,12 +152,24 @@ app.get('/api/items/:itemId/neural-prediction', async (req, res) => {
   if (normalized.length < 3) {
     return res.json({});
   }
-  const predictedNorm = await predictNext(itemId, normalized);
+  const { prediction, modelExists, trained, dataPoints } = await predictNext(
+    itemId,
+    normalized
+  );
+  if (prediction == null) {
+    return res.json({ modelExists, trained, dataPoints });
+  }
   const prices = history.map((h) => h.buyPrice);
   const max = Math.max(...prices);
   const min = Math.min(...prices);
-  const predictedPrice = predictedNorm * (max - min) + min;
-  res.json({ predictedPrice });
+  const predictedPrice = prediction * (max - min) + min;
+  res.json({
+    predictedPrice,
+    normalizedPrediction: prediction,
+    modelExists,
+    trained,
+    dataPoints,
+  });
 });
 
 app.get('/api/items/:itemId/volatility-prediction', async (req, res) => {

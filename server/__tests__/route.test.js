@@ -23,11 +23,14 @@ describe('GET /api/items/:id/neural-prediction', () => {
     }
   });
 
-  test('returns predicted price', async () => {
+  test('returns predicted price with details', async () => {
     const res = await request(app).get('/api/items/TEST/neural-prediction');
     expect(res.status).toBe(200);
     expect(res.body.predictedPrice).toBeGreaterThan(30);
     expect(res.body.predictedPrice).toBeLessThanOrEqual(40);
+    expect(res.body.modelExists).toBe(false);
+    expect(res.body.trained).toBe(true);
+    expect(res.body.dataPoints).toBe(4);
   });
 });
 
