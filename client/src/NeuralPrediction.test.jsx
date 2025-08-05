@@ -26,3 +26,13 @@ test('fetches and displays detailed prediction info', async () => {
   expect(screen.getByText('Trained Now: No')).toBeInTheDocument()
   expect(screen.getByText('Data Points: 10')).toBeInTheDocument()
 })
+
+test('renders placeholder when no item is selected', () => {
+  const fakeFetch = vi.fn()
+  global.fetch = fakeFetch
+
+  render(<NeuralPrediction />)
+
+  expect(screen.getByText('No item selected')).toBeInTheDocument()
+  expect(fakeFetch).not.toHaveBeenCalled()
+})
