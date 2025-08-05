@@ -1,6 +1,7 @@
 import { Paper, Typography, Box } from '@mui/material'
 import { Line } from 'react-chartjs-2'
 import 'chart.js/auto'
+import NeuralPrediction from '../NeuralPrediction'
 
 function ItemChart({ selectedItem, history }) {
   if (!selectedItem) return null
@@ -30,6 +31,9 @@ function ItemChart({ selectedItem, history }) {
       </Typography>
       <Box height={400}>
         <Line data={chartData} />
+      </Box>
+      <Box mt={2}>
+        <NeuralPrediction itemId={selectedItem} />
       </Box>
     </Paper>
   )
