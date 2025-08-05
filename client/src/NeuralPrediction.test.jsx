@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 
 test('fetches and displays prediction', async () => {
   const fakeFetch = vi.fn().mockResolvedValue({
+    ok: true,
     json: () => Promise.resolve({ predictedPrice: 99 })
   });
   global.fetch = fakeFetch;
