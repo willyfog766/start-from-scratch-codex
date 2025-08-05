@@ -3,7 +3,11 @@ import { Container, Typography, Box, Tabs, Tab, Select, MenuItem } from '@mui/ma
 import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
+wl6ai6-codex/show-item-data-on-press
+import ItemDetails from './components/ItemDetails'
+
 import NeuralPrediction from './NeuralPrediction'
+main
 
 function App() {
   const [tab, setTab] = useState(0)
@@ -150,7 +154,8 @@ function App() {
                   }
                 />
               </Box>
-              <Box flexGrow={1}>
+              <Box flexGrow={1} display="flex" flexDirection="column" gap={2}>
+                <ItemDetails item={items.find((it) => it.id === selectedItem)} />
                 {historyError ? (
                   <Typography color="error">
                     Error loading history: {historyError}
