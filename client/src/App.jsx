@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Line } from 'react-chartjs-2'
-import 'chart.js/auto'
 import {
   Container,
   Typography,
@@ -12,6 +10,7 @@ import {
   ListItemButton,
   ListItemText,
 } from '@mui/material'
+import HistoryChart from './components/HistoryChart'
 import './App.css'
 
 function App() {
@@ -51,24 +50,6 @@ function App() {
     }))
     .sort((a, b) => b.variation - a.variation)
     .slice(0, 10)
-
-  const chartData = {
-    labels: history.map((h) => new Date(h.time).toLocaleTimeString()),
-    datasets: [
-      {
-        label: 'Buy Price',
-        data: history.map((h) => h.buyPrice),
-        borderColor: 'rgb(75,192,192)',
-        fill: false,
-      },
-      {
-        label: 'Sell Price',
-        data: history.map((h) => h.sellPrice),
-        borderColor: 'rgb(192,75,75)',
-        fill: false,
-      },
-    ],
-  }
 
   return (
     <Container className="App" maxWidth="lg" sx={{ py: 4 }}>
@@ -124,7 +105,7 @@ function App() {
                   {selectedItem}
                 </Typography>
                 <Box height={400}>
-                  <Line data={chartData} />
+                  <HistoryChart history={history} />
                 </Box>
               </Paper>
             )}
