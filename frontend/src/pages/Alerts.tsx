@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useFavorites } from '../store/favorites';
+import { useBazaarStore } from '../store/bazaar';
 
 export default function Alerts() {
-  const { items, toggle } = useFavorites();
+  const { favorites, toggleFavorite } = useBazaarStore();
   const [input, setInput] = useState('');
+  const items = Array.from(favorites);
 
   return (
     <div className="space-y-4 max-w-sm">
@@ -17,7 +18,7 @@ export default function Alerts() {
         <button
           onClick={() => {
             if (input) {
-              toggle(input.toUpperCase());
+              toggleFavorite(input.toUpperCase());
               setInput('');
             }
           }}
@@ -34,7 +35,7 @@ export default function Alerts() {
           >
             <span>{id}</span>
             <button
-              onClick={() => toggle(id)}
+              onClick={() => toggleFavorite(id)}
               className="text-sm text-red-600"
             >
               Remove
