@@ -15,6 +15,10 @@ the trained network.
   using the trained model. If the model does not exist but enough history is
   available, the server trains a new model and saves it to disk before
   responding.
+- `GET /api/items/:itemId/volatility-prediction` – Returns
+  `{ predictedVolatility }` representing the next expected absolute change in
+  price based on historical data. Training is performed automatically when
+  sufficient history is available and results are cached on disk.
 
 Training utilities are available in `server/utils/neural.js` and can be used to
 retrain models as needed.
