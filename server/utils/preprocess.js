@@ -20,4 +20,26 @@ function volatility(history) {
   return changes.map((c) => (c - min) / range);
 }
 
-module.exports = { normalize, volatility };
+function ema(series, period) {
+  if (
+    !Array.isArray(series) ||
+    !Number.isFinite(period) ||
+    period <= 0 ||
+    series.length < period
+  )
+    return [];
+  const k = 2 / (period + 1);
+  let sum = 0;
+  for (let i = 0; i < period; i++) {
+    sum += series[i];
+  }
+  let prev = sum / period;
+  const result = [prev];
+  for (let i = period; i < series.length; i++) {
+    prev = series[i] * k + prev * (1 - k);
+    result.push(prev);
+  }
+  return result;
+}
+
+module.exports = { normalize, volatility, ema };
