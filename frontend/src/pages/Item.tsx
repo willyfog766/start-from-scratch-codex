@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import ItemSkeleton from '../components/ItemSkeleton';
 
 export default function Item() {
   const { id } = useParams();
@@ -13,7 +14,7 @@ export default function Item() {
     { enabled: !!id }
   );
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <ItemSkeleton />;
   if (error) return <div>Error loading item.</div>;
   if (!data || data.length === 0) return <div>No data for {id}</div>;
 
