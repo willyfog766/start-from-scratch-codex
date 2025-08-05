@@ -4,6 +4,12 @@ const path = require('path');
 const cors = require('cors');
 const { normalize, volatility } = require('./utils/preprocess');
 const { predictNext, predictVolatility } = require('./utils/neural');
+const {
+  bazaarItemSchema,
+  productSchema,
+  itemIdParamSchema,
+  timeframeSchema,
+} = require('./validation');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
@@ -49,18 +55,28 @@ async function fetchBazaar() {
 
     if (json && json.products) {
       Object.entries(json.products).forEach(([id, data]) => {
+        const parsedProduct = productSchema.safeParse(data);
+        if (!parsedProduct.success) {
+          return;
+        }
         if (!bazaarData[id]) {
-          bazaarData[id] = { history: [], product: data };
+          bazaarData[id] = { history: [], product: parsedProduct.data };
         }
         bazaarData[id].history.push({
           time,
-          buyPrice: data.quick_status.buyPrice,
-          sellPrice: data.quick_status.sellPrice,
+          buyPrice: parsedProduct.data.quick_status.buyPrice,
+          sellPrice: parsedProduct.data.quick_status.sellPrice,
         });
         if (bazaarData[id].history.length > 100) {
           bazaarData[id].history.shift();
         }
-        bazaarData[id].product = data;
+        bazaarData[id].product = parsedProduct.data;
+        const parsedItem = bazaarItemSchema.safeParse(bazaarData[id]);
+        if (parsedItem.success) {
+          bazaarData[id] = parsedItem.data;
+        } else {
+          delete bazaarData[id];
+        }
       });
       saveData();
     }
@@ -98,17 +114,21 @@ function predictNextPeak(itemData) {
 }
 
 app.get('/api/items', (req, res) => {
-  const items = Object.entries(bazaarData).map(([id, item]) => ({
-    id,
-    quick_status: item.product?.quick_status || {},
-  }));
+  const items = Object.entries(bazaarData)
+    .filter(([, item]) => bazaarItemSchema.safeParse(item).success)
+    .map(([id, item]) => ({
+      id,
+      quick_status: item.product?.quick_status || {},
+    }));
   res.json(items);
 });
 
 app.get('/api/variations', (req, res) => {
-  const tf = TIMEFRAMES[req.query.timeframe] || TIMEFRAMES['1m'];
+  const tfResult = timeframeSchema.safeParse(req.query.timeframe);
+  const tf = TIMEFRAMES[tfResult.success ? tfResult.data : '1m'];
   const threshold = Date.now() - tf;
   const variations = Object.entries(bazaarData)
+    .filter(([, item]) => bazaarItemSchema.safeParse(item).success)
     .map(([id, item]) => {
       const history = item.history || [];
       if (history.length === 0) {
@@ -131,23 +151,39 @@ app.get('/api/variations', (req, res) => {
 
 app.get('/api/items/:itemId', (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
-  res.json(bazaarData[itemId]?.history || []);
+  if (!itemIdParamSchema.safeParse(itemId).success) {
+    return res.status(400).json([]);
+  }
+  const item = bazaarItemSchema.safeParse(bazaarData[itemId]);
+  res.json(item.success ? item.data.history : []);
 });
 
 app.get('/api/items/:itemId/full', (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
-  res.json(bazaarData[itemId]?.product || {});
+  if (!itemIdParamSchema.safeParse(itemId).success) {
+    return res.status(400).json({});
+  }
+  const item = bazaarItemSchema.safeParse(bazaarData[itemId]);
+  res.json(item.success ? item.data.product || {} : {});
 });
 
 app.get('/api/items/:itemId/prediction', (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
-  const prediction = predictNextPeak(bazaarData[itemId]?.history);
+  if (!itemIdParamSchema.safeParse(itemId).success) {
+    return res.status(400).json({});
+  }
+  const item = bazaarItemSchema.safeParse(bazaarData[itemId]);
+  const prediction = predictNextPeak(item.success ? item.data.history : []);
   res.json(prediction || {});
 });
 
 app.get('/api/items/:itemId/neural-prediction', async (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
-  const history = bazaarData[itemId]?.history || [];
+  if (!itemIdParamSchema.safeParse(itemId).success) {
+    return res.status(400).json({});
+  }
+  const item = bazaarItemSchema.safeParse(bazaarData[itemId]);
+  const history = item.success ? item.data.history : [];
   const normalized = normalize(history);
   if (normalized.length < 3) {
     return res.json({});
@@ -174,7 +210,11 @@ app.get('/api/items/:itemId/neural-prediction', async (req, res) => {
 
 app.get('/api/items/:itemId/volatility-prediction', async (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
-  const history = bazaarData[itemId]?.history || [];
+  if (!itemIdParamSchema.safeParse(itemId).success) {
+    return res.status(400).json({});
+  }
+  const item = bazaarItemSchema.safeParse(bazaarData[itemId]);
+  const history = item.success ? item.data.history : [];
   const volSeries = volatility(history);
   if (volSeries.length < 3) {
     return res.json({});
