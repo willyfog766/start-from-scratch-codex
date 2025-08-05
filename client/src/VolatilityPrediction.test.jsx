@@ -25,3 +25,23 @@ test('renders placeholder when no item is selected', () => {
   expect(screen.getByText('No item selected')).toBeInTheDocument();
   expect(fakeFetch).not.toHaveBeenCalled();
 });
+
+test('handles API errors gracefully', async () => {
+  const fakeFetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+  global.fetch = fakeFetch;
+
+  render(<VolatilityPrediction itemId="BAD" />);
+
+  await waitFor(() => {
+    expect(screen.getByText(/Error:/)).toBeInTheDocument();
+  });
+  expect(screen.getByText('Error: Prediction not found')).toBeInTheDocument();
+});
+
+test('shows error for invalid item id', async () => {
+  render(<VolatilityPrediction itemId={123} />);
+
+  await waitFor(() => {
+    expect(screen.getByText('Error: Invalid item ID')).toBeInTheDocument();
+  });
+});
