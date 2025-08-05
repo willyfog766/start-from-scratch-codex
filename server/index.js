@@ -14,6 +14,14 @@ app.use(express.json());
 
 let bazaarData = {};
 
+const TIMEFRAMES = {
+  '1m': 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '1mo': 30 * 24 * 60 * 60 * 1000,
+  '1w': 7 * 24 * 60 * 60 * 1000,
+};
+
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
@@ -95,6 +103,30 @@ app.get('/api/items', (req, res) => {
     quick_status: item.product?.quick_status || {},
   }));
   res.json(items);
+});
+
+app.get('/api/variations', (req, res) => {
+  const tf = TIMEFRAMES[req.query.timeframe] || TIMEFRAMES['1m'];
+  const threshold = Date.now() - tf;
+  const variations = Object.entries(bazaarData)
+    .map(([id, item]) => {
+      const history = item.history || [];
+      if (history.length === 0) {
+        return { id, variation: 0 };
+      }
+      const current = history[history.length - 1];
+      let past = null;
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].time <= threshold) {
+          past = history[i];
+          break;
+        }
+      }
+      if (!past) past = history[0];
+      return { id, variation: (current.buyPrice || 0) - (past.buyPrice || 0) };
+    })
+    .sort((a, b) => b.variation - a.variation);
+  res.json(variations);
 });
 
 app.get('/api/items/:itemId', (req, res) => {

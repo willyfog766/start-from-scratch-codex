@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Container, Typography, Box, Tabs, Tab } from '@mui/material'
+import { Container, Typography, Box, Tabs, Tab, Select, MenuItem } from '@mui/material'
 import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
@@ -13,6 +13,10 @@ function App() {
   const [itemsError, setItemsError] = useState(null)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyError, setHistoryError] = useState(null)
+  const [variationTimeframe, setVariationTimeframe] = useState('1m')
+  const [variations, setVariations] = useState([])
+  const [variationsLoading, setVariationsLoading] = useState(false)
+  const [variationsError, setVariationsError] = useState(null)
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -57,14 +61,26 @@ function App() {
     }
   }, [selectedItem, fetchHistory])
 
-  const variations = [...items]
-    .map((it) => ({
-      id: it.id,
-      variation:
-        (it.quick_status.sellPrice || 0) - (it.quick_status.buyPrice || 0),
-    }))
-    .sort((a, b) => b.variation - a.variation)
-    .slice(0, 10)
+  useEffect(() => {
+    const fetchVariations = async () => {
+      setVariationsLoading(true)
+      setVariationsError(null)
+      try {
+        const res = await fetch(
+          `http://localhost:3001/api/variations?timeframe=${variationTimeframe}`
+        )
+        if (!res.ok) throw new Error('Network response was not ok')
+        const data = await res.json()
+        setVariations(data.slice(0, 10))
+      } catch (err) {
+        setVariationsError(err.message)
+        setVariations([])
+      } finally {
+        setVariationsLoading(false)
+      }
+    }
+    fetchVariations()
+  }, [variationTimeframe])
 
   return (
     <Container className="App" maxWidth="lg" sx={{ py: 4 }}>
@@ -87,14 +103,37 @@ function App() {
           </Tabs>
           {tab === 0 && (
             <Box mt={2}>
-              <ItemList
-                items={variations}
-                onItemSelect={(id) => {
-                  setSelectedItem(id)
-                  setTab(1)
-                }}
-                getSecondary={(v) => `Variation: ${v.variation.toFixed(2)}`}
-              />
+              <Box mb={2} display="flex" justifyContent="center">
+                <Select
+                  value={variationTimeframe}
+                  size="small"
+                  onChange={(e) => setVariationTimeframe(e.target.value)}
+                >
+                  <MenuItem value="1m">1 minute</MenuItem>
+                  <MenuItem value="1h">1 hour</MenuItem>
+                  <MenuItem value="1d">1 day</MenuItem>
+                  <MenuItem value="1mo">1 month</MenuItem>
+                  <MenuItem value="1w">1 week</MenuItem>
+                </Select>
+              </Box>
+              {variationsLoading && (
+                <Typography align="center">Loading variations...</Typography>
+              )}
+              {variationsError && (
+                <Typography align="center" color="error">
+                  Error loading variations: {variationsError}
+                </Typography>
+              )}
+              {!variationsLoading && !variationsError && (
+                <ItemList
+                  items={variations}
+                  onItemSelect={(id) => {
+                    setSelectedItem(id)
+                    setTab(1)
+                  }}
+                  getSecondary={(v) => `Variation: ${v.variation.toFixed(2)}`}
+                />
+              )}
             </Box>
           )}
           {tab === 1 && (
