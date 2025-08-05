@@ -4,14 +4,20 @@ import axios from 'axios';
 
 export default function Item() {
   const { id } = useParams();
-  const { data, isLoading, error } = useQuery(
-    ['item', id],
-    async () => {
+  const { data, isLoading, error } = useQuery<
+    { time: number; buyPrice: number; sellPrice: number }[]
+  >({
+    queryKey: ['item', id],
+    queryFn: async () => {
       const res = await axios.get(`/items/${id}`);
-      return res.data as { time: number; buyPrice: number; sellPrice: number }[];
+      return res.data as {
+        time: number;
+        buyPrice: number;
+        sellPrice: number;
+      }[];
     },
-    { enabled: !!id }
-  );
+    enabled: !!id,
+  });
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading item.</div>;

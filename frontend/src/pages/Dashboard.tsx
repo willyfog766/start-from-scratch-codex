@@ -7,9 +7,12 @@ interface Item {
 }
 
 export default function Dashboard() {
-  const { data } = useQuery<Item[]>(['items'], async () => {
-    const res = await axios.get('/items');
-    return res.data;
+  const { data } = useQuery<Item[]>({
+    queryKey: ['items'],
+    queryFn: async () => {
+      const res = await axios.get('/items');
+      return res.data;
+    },
   });
 
   return (

@@ -7,11 +7,12 @@ interface Variation {
 }
 
 export default function Analytics() {
-  const { data, isLoading, error } = useQuery<Variation[]>([
-    'variations',
-  ], async () => {
-    const res = await axios.get('/variations?timeframe=1h');
-    return res.data;
+  const { data, isLoading, error } = useQuery<Variation[]>({
+    queryKey: ['variations'],
+    queryFn: async () => {
+      const res = await axios.get('/variations?timeframe=1h');
+      return res.data;
+    },
   });
 
   if (isLoading) return <div>Loading...</div>;
