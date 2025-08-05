@@ -1,66 +1,134 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Line } from 'react-chartjs-2'
 import 'chart.js/auto'
-import { Container, Typography, TextField, Button, Box, Paper } from '@mui/material'
+import {
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Tabs,
+  Tab,
+  List,
+  ListItemButton,
+  ListItemText,
+} from '@mui/material'
 import './App.css'
 
 function App() {
-  const [itemId, setItemId] = useState('ENCHANTED_COBBLESTONE');
-  const [data, setData] = useState([]);
-  const [prediction, setPrediction] = useState(null);
-
-  const fetchData = useCallback(async () => {
-    const res = await fetch(`http://localhost:3001/api/items/${itemId}`);
-    const json = await res.json();
-    setData(json);
-    const predRes = await fetch(`http://localhost:3001/api/items/${itemId}/prediction`);
-    const predJson = await predRes.json();
-    setPrediction(predJson);
-  }, [itemId]);
+  const [tab, setTab] = useState(0)
+  const [items, setItems] = useState([])
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [history, setHistory] = useState([])
 
   useEffect(() => {
-    fetchData();
-    const id = setInterval(fetchData, 60000);
-    return () => clearInterval(id);
-  }, [fetchData]);
+    fetch('http://localhost:3001/api/items')
+      .then((res) => res.json())
+      .then((data) => {
+        setItems(data)
+        if (data.length > 0) {
+          setSelectedItem(data[0].id)
+        }
+      })
+  }, [])
+
+  const fetchHistory = useCallback(async (id) => {
+    const res = await fetch(`http://localhost:3001/api/items/${id}`)
+    const json = await res.json()
+    setHistory(json)
+  }, [])
+
+  useEffect(() => {
+    if (selectedItem) {
+      fetchHistory(selectedItem)
+    }
+  }, [selectedItem, fetchHistory])
+
+  const variations = [...items]
+    .map((it) => ({
+      id: it.id,
+      variation:
+        (it.quick_status.sellPrice || 0) - (it.quick_status.buyPrice || 0),
+    }))
+    .sort((a, b) => b.variation - a.variation)
+    .slice(0, 10)
 
   const chartData = {
-    labels: data.map(d => new Date(d.time).toLocaleTimeString()),
+    labels: history.map((h) => new Date(h.time).toLocaleTimeString()),
     datasets: [
       {
         label: 'Buy Price',
-        data: data.map(d => d.price),
+        data: history.map((h) => h.buyPrice),
         borderColor: 'rgb(75,192,192)',
         fill: false,
       },
+      {
+        label: 'Sell Price',
+        data: history.map((h) => h.sellPrice),
+        borderColor: 'rgb(192,75,75)',
+        fill: false,
+      },
     ],
-  };
+  }
 
   return (
-    <Container className="App" maxWidth="md" sx={{ py: 4 }}>
+    <Container className="App" maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom align="center">
         Bazaar Tracker
       </Typography>
-      <Box display="flex" justifyContent="center" gap={2} mb={3}>
-        <TextField
-          label="Item ID"
-          value={itemId}
-          onChange={e => setItemId(e.target.value.toUpperCase())}
-          size="small"
-        />
-        <Button variant="contained" onClick={fetchData}>Load</Button>
-      </Box>
-      <Paper sx={{ p: 2 }}>
-        <Box height={400}>
-          <Line data={chartData} />
-        </Box>
-      </Paper>
-      {prediction && prediction.predictedPrice && (
+      <Tabs value={tab} onChange={(e, v) => setTab(v)} centered>
+        <Tab label="Top Variation" />
+        <Tab label="All Items" />
+      </Tabs>
+      {tab === 0 && (
         <Box mt={2}>
-          <Typography variant="body1" align="center">
-            Predicted next peak: {prediction.predictedPrice.toFixed(2)} at{' '}
-            {new Date(prediction.predictedTime).toLocaleTimeString()}
-          </Typography>
+          <List>
+            {variations.map((v) => (
+              <ListItemButton
+                key={v.id}
+                onClick={() => {
+                  setSelectedItem(v.id)
+                  setTab(1)
+                }}
+              >
+                <ListItemText
+                  primary={v.id}
+                  secondary={`Variation: ${v.variation.toFixed(2)}`}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </Box>
+      )}
+      {tab === 1 && (
+        <Box mt={2} display="flex" gap={2}>
+          <Box width="30%" maxHeight={400} sx={{ overflowY: 'auto' }}>
+            <List>
+              {items.map((it) => (
+                <ListItemButton
+                  key={it.id}
+                  selected={it.id === selectedItem}
+                  onClick={() => setSelectedItem(it.id)}
+                >
+                  <ListItemText
+                    primary={it.id}
+                    secondary={`Buy: ${(it.quick_status.buyPrice || 0).toFixed(1)} Sell: ${(it.quick_status.sellPrice || 0).toFixed(1)}`}
+                  />
+                </ListItemButton>
+              ))}
+            </List>
+          </Box>
+          <Box flexGrow={1}>
+            {selectedItem && (
+              <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" align="center" gutterBottom>
+                  {selectedItem}
+                </Typography>
+                <Box height={400}>
+                  <Line data={chartData} />
+                </Box>
+              </Paper>
+            )}
+          </Box>
         </Box>
       )}
     </Container>

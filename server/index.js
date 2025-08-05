@@ -3,13 +3,18 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 
-const DATA_FILE = path.join(__dirname, 'data', 'bazaar-data.json');
+const DATA_DIR = path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'bazaar-data.json');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 let bazaarData = {};
+
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
 function loadData() {
   try {
@@ -34,12 +39,18 @@ async function fetchBazaar() {
 
     if (json && json.products) {
       Object.entries(json.products).forEach(([id, data]) => {
-        const price = data.quick_status.buyPrice;
-        if (!bazaarData[id]) bazaarData[id] = [];
-        bazaarData[id].push({ time, price });
-        if (bazaarData[id].length > 100) {
-          bazaarData[id].shift();
+        if (!bazaarData[id]) {
+          bazaarData[id] = { history: [], product: data };
         }
+        bazaarData[id].history.push({
+          time,
+          buyPrice: data.quick_status.buyPrice,
+          sellPrice: data.quick_status.sellPrice,
+        });
+        if (bazaarData[id].history.length > 100) {
+          bazaarData[id].history.shift();
+        }
+        bazaarData[id].product = data;
       });
       saveData();
     }
@@ -55,9 +66,9 @@ function predictNextPeak(itemData) {
   if (!itemData || itemData.length < 3) return null;
   const peaks = [];
   for (let i = 1; i < itemData.length - 1; i++) {
-    const prev = itemData[i - 1].price;
-    const curr = itemData[i].price;
-    const next = itemData[i + 1].price;
+    const prev = itemData[i - 1].buyPrice;
+    const curr = itemData[i].buyPrice;
+    const next = itemData[i + 1].buyPrice;
     if (curr > prev && curr > next) {
       peaks.push(itemData[i]);
     }
@@ -66,22 +77,35 @@ function predictNextPeak(itemData) {
   const lastPeak = peaks[peaks.length - 1];
   const prevPeak = peaks[peaks.length - 2];
   const avgInterval = lastPeak.time - prevPeak.time;
-  const avgIncrease = lastPeak.price - prevPeak.price;
+  const avgIncrease = lastPeak.buyPrice - prevPeak.buyPrice;
 
   return {
     predictedTime: lastPeak.time + avgInterval,
-    predictedPrice: lastPeak.price + avgIncrease,
+    predictedPrice: lastPeak.buyPrice + avgIncrease,
   };
 }
 
+app.get('/api/items', (req, res) => {
+  const items = Object.entries(bazaarData).map(([id, item]) => ({
+    id,
+    quick_status: item.product?.quick_status || {},
+  }));
+  res.json(items);
+});
+
 app.get('/api/items/:itemId', (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
-  res.json(bazaarData[itemId] || []);
+  res.json(bazaarData[itemId]?.history || []);
+});
+
+app.get('/api/items/:itemId/full', (req, res) => {
+  const itemId = req.params.itemId.toUpperCase();
+  res.json(bazaarData[itemId]?.product || {});
 });
 
 app.get('/api/items/:itemId/prediction', (req, res) => {
   const itemId = req.params.itemId.toUpperCase();
-  const prediction = predictNextPeak(bazaarData[itemId]);
+  const prediction = predictNextPeak(bazaarData[itemId]?.history);
   res.json(prediction || {});
 });
 
