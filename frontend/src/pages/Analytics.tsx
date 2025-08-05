@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import VariationListSkeleton from '../components/VariationListSkeleton';
 
 interface Variation {
   id: string;
@@ -14,7 +15,7 @@ export default function Analytics() {
     return res.data;
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <VariationListSkeleton />;
   if (error) return <div>Error loading analytics.</div>;
 
   return (
