@@ -3,6 +3,7 @@ import { Container, Typography, Box, Tabs, Tab } from '@mui/material'
 import './App.css'
 import ItemList from './components/ItemList'
 import ItemChart from './components/ItemChart'
+import ItemData from './components/ItemData'
 
 function App() {
   const [tab, setTab] = useState(0)
@@ -117,7 +118,10 @@ function App() {
                 ) : historyLoading ? (
                   <Typography>Loading history...</Typography>
                 ) : (
-                  <ItemChart selectedItem={selectedItem} history={history} />
+                  <>
+                    <ItemChart selectedItem={selectedItem} history={history} />
+                    <ItemData itemId={selectedItem} />
+                  </>
                 )}
               </Box>
             </Box>
